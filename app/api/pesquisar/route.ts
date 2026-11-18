@@ -7,7 +7,7 @@ import { normalizarDossie, normalizarPersona, normalizarRoteiro } from "@/lib/no
 import { OFERTA_PADRAO, promptEstruturar, promptPesquisa } from "@/lib/prompts";
 import type { Entrada, ResultadoPesquisa } from "@/lib/types";
 
-export const maxDuration = 60;
+export const maxDuration = 120;
 
 export async function POST(req: Request) {
   try {

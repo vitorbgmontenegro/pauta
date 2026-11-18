@@ -6,7 +6,7 @@ import { normalizarAvaliacao } from "@/lib/normalizar";
 import { promptAvaliar } from "@/lib/prompts";
 import type { Avaliacao, Lead, Mensagem } from "@/lib/types";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {

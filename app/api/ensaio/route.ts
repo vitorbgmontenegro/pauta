@@ -5,7 +5,7 @@ import { conversar, respostaDeErro } from "@/lib/gemini";
 import { sistemaEnsaio } from "@/lib/prompts";
 import type { Lead, Mensagem } from "@/lib/types";
 
-export const maxDuration = 30;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {

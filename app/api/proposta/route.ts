@@ -6,7 +6,7 @@ import { normalizarProposta } from "@/lib/normalizar";
 import { promptProposta } from "@/lib/prompts";
 import type { Lead, Proposta } from "@/lib/types";
 
-export const maxDuration = 45;
+export const maxDuration = 60;
 
 export async function POST(req: Request) {
   try {
