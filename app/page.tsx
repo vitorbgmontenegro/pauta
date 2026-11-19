@@ -1,6 +1,6 @@
 "use client";
 
-// Tela inicial: formulário para pesquisar uma empresa e lista de leads já preparados.
+// Tela inicial: formulário para pesquisar uma empresa e lista de reuniões já preparadas.
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -10,8 +10,14 @@ import { OFERTA_PADRAO } from "@/lib/prompts";
 import { listarLeads, novoId, salvarLead } from "@/lib/storage";
 import type { Entrada, Lead, ResultadoPesquisa } from "@/lib/types";
 
-// Etapas mostradas enquanto a IA trabalha. Avançam por tempo, só para dar noção de progresso.
-const ETAPAS = ["Pesquisando a empresa na web", "Cruzando sinais e dores prováveis", "Escrevendo o roteiro SPIN", "Criando o cliente para o ensaio"];
+// Mensagens mostradas enquanto a IA trabalha. Avançam por tempo, só para dar noção de progresso.
+const ETAPAS = ["Pesquisando a empresa na web…", "Montando o dossiê…", "Escrevendo o roteiro…", "Quase pronto…"];
+
+function statusDoLead(l: Lead) {
+  if (l.proposta) return "Proposta pronta";
+  if (l.ensaio?.avaliacao) return `Ensaio: ${l.ensaio.avaliacao.nota}/10`;
+  return "Roteiro pronto";
+}
 
 export default function Home() {
   const router = useRouter();
@@ -37,7 +43,7 @@ export default function Home() {
   useEffect(() => {
     if (!carregando) return;
     setEtapa(0);
-    const t = setInterval(() => setEtapa((e) => Math.min(e + 1, ETAPAS.length - 1)), 6000);
+    const t = setInterval(() => setEtapa((e) => Math.min(e + 1, ETAPAS.length - 1)), 8000);
     return () => clearInterval(t);
   }, [carregando]);
 
@@ -58,89 +64,67 @@ export default function Home() {
   }
 
   return (
-    <div className="home">
-      <section className="home-esq">
-        <span className="rotulo">Para quem vende serviço B2B</span>
-        <h1 className="titulo-grande">
-          Chegue na reunião sabendo <span className="marcado">o que perguntar</span>.
-        </h1>
-        <p className="lead-intro">
-          Digite o nome de uma empresa. A Pauta pesquisa na web, monta o dossiê e o roteiro de diagnóstico, deixa você
-          ensaiar com um cliente simulado e, depois da reunião, escreve a proposta.
+    <>
+      <section className="hero">
+        <h1 className="titulo">Prepare sua próxima reunião de diagnóstico</h1>
+        <p className="suave">
+          Digite o nome da empresa. A Pauta pesquisa, monta o roteiro, deixa você ensaiar e depois escreve a proposta.
         </p>
-
-        <div className="passos-home">
-          <div><span className="rotulo">01</span><b>Preparar</b><span className="pequeno texto-suave">Dossiê e roteiro SPIN</span></div>
-          <div><span className="rotulo">02</span><b>Ensaiar</b><span className="pequeno texto-suave">Cliente simulado e nota</span></div>
-          <div><span className="rotulo">03</span><b>Propor</b><span className="pequeno texto-suave">Anotações viram proposta</span></div>
-        </div>
-
-        <form className="form-pesquisa" onSubmit={preparar}>
-          <div className="campo">
-            <label className="rotulo" htmlFor="empresa">Empresa</label>
-            <input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Ex.: nome da empresa que você vai visitar" required disabled={carregando} />
-          </div>
-          <div className="linha-campos">
-            <div className="campo">
-              <label className="rotulo" htmlFor="site">Site ou Instagram (opcional)</label>
-              <input id="site" value={site} onChange={(e) => setSite(e.target.value)} placeholder="empresa.com.br" disabled={carregando} />
-            </div>
-            <div className="campo">
-              <label className="rotulo" htmlFor="cidade">Cidade</label>
-              <input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} disabled={carregando} />
-            </div>
-          </div>
-
-          {editarOferta ? (
-            <div className="campo">
-              <label className="rotulo" htmlFor="oferta">O que você vende</label>
-              <textarea id="oferta" value={oferta} onChange={(e) => setOferta(e.target.value)} disabled={carregando} />
-            </div>
-          ) : (
-            <p className="pequeno texto-suave" style={{ margin: 0 }}>
-              Vendendo como <b>CITi</b> (software sob medida).{" "}
-              <button type="button" className="link-texto" onClick={() => setEditarOferta(true)}>mudar</button>
-            </p>
-          )}
-
-          {erro && <div className="erro">{erro}</div>}
-
-          {carregando ? (
-            <div className="carregando" aria-live="polite">
-              {ETAPAS.map((t, i) => (
-                <div key={t} className={`passo-carga ${i < etapa ? "feito" : i === etapa ? "ativo" : ""}`}>
-                  <span className="bolinha" />
-                  {t}
-                </div>
-              ))}
-              <span className="pequeno texto-suave">Leva uns 20 a 40 segundos.</span>
-            </div>
-          ) : (
-            <div className="acoes">
-              <button className="botao" type="submit">Preparar reunião</button>
-            </div>
-          )}
-        </form>
       </section>
 
-      <aside className="home-dir">
-        <span className="rotulo">Reuniões preparadas</span>
-        {leads.map((l) => (
-          <Link key={l.id} href={`/lead/${l.id}`} className="ficha">
-            <div className="ficha-topo">
-              <span className="ficha-nome">{l.dossie.empresa}</span>
-              {l.exemplo ? <span className="etiqueta">exemplo</span> : <span className="etiqueta">ICP {l.dossie.encaixe_icp.nota}/10</span>}
-            </div>
-            <span className="pequeno texto-suave">{l.dossie.segmento} · {l.dossie.localizacao}</span>
-            <span className="pequeno texto-suave">
-              {l.proposta ? "Proposta pronta" : l.ensaio?.avaliacao ? `Ensaio nota ${l.ensaio.avaliacao.nota}` : "Roteiro pronto"}
+      <form className="cartao" onSubmit={preparar}>
+        <div className="linha" style={{ alignItems: "flex-end" }}>
+          <div className="campo" style={{ flexBasis: 280 }}>
+            <label className="rotulo" htmlFor="empresa">Empresa</label>
+            <input id="empresa" value={empresa} onChange={(e) => setEmpresa(e.target.value)} placeholder="Nome da empresa" required disabled={carregando} />
+          </div>
+          <div className="campo">
+            <label className="rotulo" htmlFor="site">Site ou Instagram (opcional)</label>
+            <input id="site" value={site} onChange={(e) => setSite(e.target.value)} placeholder="empresa.com.br" disabled={carregando} />
+          </div>
+          <div className="campo" style={{ flexBasis: 140 }}>
+            <label className="rotulo" htmlFor="cidade">Cidade</label>
+            <input id="cidade" value={cidade} onChange={(e) => setCidade(e.target.value)} disabled={carregando} />
+          </div>
+        </div>
+
+        {editarOferta && (
+          <div className="campo">
+            <label className="rotulo" htmlFor="oferta">O que você vende</label>
+            <textarea id="oferta" value={oferta} onChange={(e) => setOferta(e.target.value)} disabled={carregando} style={{ minHeight: 80 }} />
+          </div>
+        )}
+
+        {erro && <div className="erro">{erro}</div>}
+
+        <div className="linha" style={{ justifyContent: "space-between" }}>
+          {carregando ? (
+            <span className="progresso-texto" aria-live="polite"><span className="girando" />{ETAPAS[etapa]}</span>
+          ) : (
+            <span className="pequeno suave">
+              Vendendo como CITi.{" "}
+              {!editarOferta && <button type="button" className="link" onClick={() => setEditarOferta(true)}>Mudar</button>}
             </span>
-          </Link>
-        ))}
-        <p className="pequeno texto-suave" style={{ margin: 0 }}>
-          Os leads ficam salvos neste navegador. O exemplo é de uma empresa fictícia, para você ver o fluxo completo.
-        </p>
-      </aside>
-    </div>
+          )}
+          <button className="botao" type="submit" disabled={carregando}>{carregando ? "Preparando…" : "Preparar reunião"}</button>
+        </div>
+      </form>
+
+      <section className="cartao">
+        <h2 className="subtitulo">Suas reuniões</h2>
+        <div className="lista-leads">
+          {leads.map((l) => (
+            <Link key={l.id} href={`/lead/${l.id}`} className="lead-linha">
+              <div className="lead-info">
+                <span className="lead-nome">{l.dossie.empresa}</span>
+                <span className="pequeno suave">{l.dossie.segmento}{l.exemplo ? " · exemplo fictício" : ""}</span>
+              </div>
+              <span className="selo">{statusDoLead(l)}</span>
+              <span className="suave">→</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 "use client";
 
-// Aba 03: anotações da reunião (real ou do ensaio) viram uma proposta comercial.
-// A proposta é exibida como documento e pode ser copiada ou salva em PDF pela impressão do navegador.
+// Etapa 3: anotações da reunião (real ou do ensaio) viram uma proposta comercial.
+// A proposta aparece como documento e pode ser copiada ou salva em PDF pela impressão do navegador.
 
 import { useState } from "react";
 import { postar } from "@/lib/api";
@@ -34,10 +34,7 @@ export default function Propor({ lead, atualizar }: Props) {
     setGerando(true);
     atualizar({ anotacoes });
     try {
-      const proposta = await postar<Proposta>("/api/proposta", {
-        lead: { entrada: lead.entrada, dossie: lead.dossie },
-        anotacoes,
-      });
+      const proposta = await postar<Proposta>("/api/proposta", { lead: { entrada: lead.entrada, dossie: lead.dossie }, anotacoes });
       atualizar({ proposta, anotacoes });
     } catch (e) {
       setErro(e instanceof Error ? e.message : "Erro ao gerar a proposta.");
@@ -58,80 +55,52 @@ export default function Propor({ lead, atualizar }: Props) {
   }
 
   return (
-    <div className="duas-colunas">
-      <div className="coluna col-esq nao-imprimir">
-        <section className="bloco">
-          <div className="bloco-cab"><h2 className="titulo-secao">Anotações da reunião</h2></div>
-          <p className="pequeno texto-suave" style={{ margin: 0 }}>
-            Cole o que o cliente falou: problemas, números, prazos, quem decide. Quanto mais palavras dele, melhor a proposta.
-          </p>
-          <div className="campo">
-            <textarea
-              value={anotacoes}
-              onChange={(e) => setAnotacoes(e.target.value)}
-              rows={14}
-              placeholder="Ex.: perde uns 2 pedidos por dia no WhatsApp, estoque em planilha separada por loja, quer começar pela loja X…"
-            />
-          </div>
-          {erro && <div className="erro">{erro}</div>}
-          <div className="acoes">
-            <button className="botao" onClick={gerar} disabled={gerando || anotacoes.trim().length < 20}>
-              {gerando ? "Escrevendo a proposta…" : p ? "Gerar de novo" : "Gerar proposta"}
-            </button>
-          </div>
-        </section>
+    <div className="proposta">
+      <section className="cartao nao-imprimir">
+        <h2 className="subtitulo">Anotações da reunião</h2>
+        <p className="pequeno suave">O que o cliente falou: problemas, números, prazos e quem decide.</p>
+        <div className="campo">
+          <textarea value={anotacoes} onChange={(e) => setAnotacoes(e.target.value)} placeholder="Ex.: perde uns 2 pedidos por dia no WhatsApp…" />
+        </div>
+        {erro && <div className="erro">{erro}</div>}
+        <button className="botao" onClick={gerar} disabled={gerando || anotacoes.trim().length < 20}>
+          {gerando ? "Escrevendo…" : p ? "Gerar de novo" : "Gerar proposta"}
+        </button>
+      </section>
 
-        <section className="incerteza">
-          <span className="rotulo">Lembre do roteiro</span>
-          <span className="pequeno">Próximo passo combinado: {lead.roteiro.fechamento.proximo_passo}</span>
-        </section>
-      </div>
-
-      <div className="coluna col-dir">
-        {!p && !gerando && (
-          <div className="chat-vazio" style={{ padding: "60px 0" }}>
-            <span className="titulo-secao">A proposta aparece aqui.</span>
-            <span className="pequeno">Ela usa o dossiê da pesquisa e as suas anotações, sem inventar preço.</span>
-          </div>
-        )}
-        {gerando && <p className="texto-suave">Escrevendo com as palavras do cliente…</p>}
-        {p && (
-          <>
-            <div className="acoes nao-imprimir">
-              <button className="botao botao-claro botao-mini" onClick={copiar}>{copiado ? "Copiado ✓" : "Copiar texto"}</button>
-              <button className="botao botao-claro botao-mini" onClick={() => window.print()}>Salvar em PDF</button>
+      {p ? (
+        <article className="cartao doc">
+          <div className="cartao-cab nao-imprimir">
+            <span className="rotulo">Proposta para {lead.dossie.empresa}</span>
+            <div className="linha">
+              <button className="botao botao-sec botao-mini" onClick={copiar}>{copiado ? "Copiado ✓" : "Copiar"}</button>
+              <button className="botao botao-sec botao-mini" onClick={() => window.print()}>PDF</button>
             </div>
-            <article className="proposta-doc">
-              <span className="rotulo">Proposta comercial · {lead.dossie.empresa}</span>
-              <h2 className="titulo-medio">{p.titulo}</h2>
-              <section className="bloco"><h3>Contexto</h3><p>{p.contexto}</p></section>
-              <section className="bloco"><h3>O problema</h3><p>{p.problema}</p></section>
-              <section className="bloco"><h3>A solução</h3><p>{p.solucao}</p></section>
-              <section className="bloco">
-                <h3>Como vamos fazer</h3>
-                <div className="etapas">
-                  {p.etapas.map((e, i) => (
-                    <div key={e.nome} className="etapa">
-                      <span className="etapa-num">{i + 1}</span>
-                      <div className="etapa-corpo"><b style={{ fontWeight: 500 }}>{e.nome}</b><span className="pequeno texto-suave">{e.descricao}</span></div>
-                      <span className="etapa-prazo">{e.prazo}</span>
-                    </div>
-                  ))}
-                </div>
-              </section>
-              <section className="bloco">
-                <h3>Entregáveis</h3>
-                <ul className="lista-limpa">{p.entregaveis.map((x) => <li key={x} className="item-ponto">{x}</li>)}</ul>
-              </section>
-              <section className="bloco"><h3>Investimento</h3><p>{p.investimento}</p></section>
-              <section className="bloco">
-                <h3>Próximos passos</h3>
-                <ul className="lista-limpa">{p.proximos_passos.map((x) => <li key={x} className="item-ponto">{x}</li>)}</ul>
-              </section>
-            </article>
-          </>
-        )}
-      </div>
+          </div>
+          <h2 className="titulo" style={{ fontSize: 24 }}>{p.titulo}</h2>
+          <section><h3>Contexto</h3><p>{p.contexto}</p></section>
+          <section><h3>O problema</h3><p>{p.problema}</p></section>
+          <section><h3>A solução</h3><p>{p.solucao}</p></section>
+          <section>
+            <h3>Etapas</h3>
+            <ol>
+              {p.etapas.map((e) => (
+                <li key={e.nome}>
+                  <div className="doc-etapa"><b>{e.nome}</b><span className="pequeno suave">{e.prazo}</span></div>
+                  <span className="pequeno suave">{e.descricao}</span>
+                </li>
+              ))}
+            </ol>
+          </section>
+          <section><h3>Entregáveis</h3><ul>{p.entregaveis.map((x) => <li key={x}>{x}</li>)}</ul></section>
+          <section><h3>Investimento</h3><p>{p.investimento}</p></section>
+          <section><h3>Próximos passos</h3><ul>{p.proximos_passos.map((x) => <li key={x}>{x}</li>)}</ul></section>
+        </article>
+      ) : (
+        <section className="cartao doc" style={{ alignItems: "center", justifyContent: "center", minHeight: 300, textAlign: "center" }}>
+          <span className="suave">{gerando ? "Escrevendo com as palavras do cliente…" : "A proposta aparece aqui."}</span>
+        </section>
+      )}
     </div>
   );
 }

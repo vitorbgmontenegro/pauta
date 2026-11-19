@@ -1,7 +1,7 @@
 "use client";
 
-// Página de um lead: cabeçalho com o encaixe no ICP e as três abas (Preparar, Ensaiar, Propor).
-// O lead mora no localStorage; cada aba recebe o lead e uma função para atualizá-lo.
+// Página de um lead: cabeçalho e as três etapas (Preparar, Ensaiar, Propor).
+// O lead mora no localStorage; cada etapa recebe o lead e uma função para atualizá-lo.
 
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
@@ -14,10 +14,10 @@ import type { Lead } from "@/lib/types";
 
 type Aba = "preparar" | "ensaiar" | "propor";
 
-const ABAS: { id: Aba; num: string; nome: string; dica: string }[] = [
-  { id: "preparar", num: "01", nome: "Preparar", dica: "dossiê e roteiro" },
-  { id: "ensaiar", num: "02", nome: "Ensaiar", dica: "cliente simulado" },
-  { id: "propor", num: "03", nome: "Propor", dica: "proposta" },
+const ABAS: { id: Aba; nome: string }[] = [
+  { id: "preparar", nome: "Preparar" },
+  { id: "ensaiar", nome: "Ensaiar" },
+  { id: "propor", nome: "Propor" },
 ];
 
 export default function PaginaLead() {
@@ -40,58 +40,54 @@ export default function PaginaLead() {
     });
   }
 
-  if (lead === undefined) return <p className="texto-suave">Abrindo…</p>;
+  if (lead === undefined) return <p className="suave">Abrindo…</p>;
   if (lead === null)
     return (
-      <div className="bloco">
-        <h1 className="titulo-medio">Lead não encontrado</h1>
-        <p className="texto-suave">Os leads ficam salvos no navegador onde foram criados.</p>
-        <Link className="botao" href="/">Voltar</Link>
+      <div className="cartao">
+        <h1 className="subtitulo">Reunião não encontrada</h1>
+        <p className="suave">As reuniões ficam salvas no navegador onde foram criadas.</p>
+        <Link className="botao" href="/" style={{ alignSelf: "flex-start" }}>Voltar</Link>
       </div>
     );
 
   const d = lead.dossie;
+  const nota = d.encaixe_icp.nota;
   return (
     <>
-      <div className="cabeca-lead">
-        <div className="cabeca-lead-txt">
-          <span className="rotulo">
-            <Link href="/">← reuniões</Link> · {d.segmento}
-            {lead.exemplo && " · exemplo fictício"}
-          </span>
-          <h1 className="titulo-grande">{d.empresa}</h1>
-          <span className="texto-suave">{d.localizacao} · {d.porte}</span>
+      <div className="cabeca">
+        <div className="cabeca-txt">
+          <Link href="/" className="voltar">← Suas reuniões</Link>
+          <h1 className="titulo">{d.empresa}</h1>
+          <span className="suave">{[d.segmento, d.localizacao].filter(Boolean).join(" · ")}</span>
         </div>
-        <div className="carimbo" title={d.encaixe_icp.justificativa}>
-          <span>encaixe</span>
-          <b>{d.encaixe_icp.nota}</b>
-          <span>de 10</span>
+        <div className="linha">
+          <span className={`selo ${nota >= 7 ? "selo-bom" : ""}`} title={d.encaixe_icp.justificativa}>Encaixe {nota}/10</span>
+          {lead.exemplo && <span className="selo">Exemplo fictício</span>}
         </div>
       </div>
 
-      <nav className="abas">
-        {ABAS.map((a) => (
-          <button key={a.id} className={`aba ${aba === a.id ? "atual" : ""}`} onClick={() => setAba(a.id)}>
-            <small>{a.num}</small>
-            <b>{a.nome}</b>
-            <small>{a.dica}</small>
-          </button>
-        ))}
+      <div className="linha" style={{ justifyContent: "space-between" }}>
+        <nav className="etapas">
+          {ABAS.map((a, i) => (
+            <button key={a.id} className={`etapa ${aba === a.id ? "atual" : ""}`} onClick={() => setAba(a.id)}>
+              <b>{i + 1}</b>{a.nome}
+            </button>
+          ))}
+        </nav>
         {!lead.exemplo && (
           <button
-            className="link-texto"
-            style={{ marginLeft: "auto" }}
+            className="link"
             onClick={() => {
-              if (confirm("Apagar este lead?")) {
+              if (confirm("Apagar esta reunião?")) {
                 apagarLead(lead.id);
                 router.push("/");
               }
             }}
           >
-            apagar lead
+            Apagar
           </button>
         )}
-      </nav>
+      </div>
 
       {aba === "preparar" && <Preparar lead={lead} atualizar={atualizar} />}
       {aba === "ensaiar" && <Ensaiar lead={lead} atualizar={atualizar} irPara={() => setAba("propor")} />}

@@ -8,6 +8,12 @@
 
 Feito por Vitor Montenegro para o Desafio de Inovação do processo seletivo do CITi (nov/2026).
 
+## Como avaliar
+
+1. Rode localmente (abaixo). Leva uns 2 minutos.
+2. Abra o exemplo **Mercadinho Boa Vista** na tela inicial. Ele mostra as três etapas prontas e funciona sem chave de API.
+3. Para pesquisar uma empresa real, coloque uma chave gratuita do Gemini no `.env.local`.
+
 ## Rodar localmente
 
 ```bash
@@ -18,7 +24,7 @@ npm run dev                  # http://localhost:3000
 
 A chave é gratuita em https://aistudio.google.com/apikey.
 
-## Subir na Vercel
+## Publicar na Vercel (opcional)
 
 1. Suba este repositório no GitHub.
 2. Em vercel.com → **Add New → Project**, importe o repositório (o framework Next.js é detectado sozinho).

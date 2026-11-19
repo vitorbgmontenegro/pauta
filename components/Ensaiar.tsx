@@ -1,8 +1,8 @@
 "use client";
 
-// Aba 02: ensaio com cliente simulado.
-// O vendedor conversa por chat; a IA interpreta o dono da empresa e só revela as dores se for bem perguntada.
-// No fim, "Encerrar e avaliar" dá a nota e mostra quais dores ficaram escondidas.
+// Etapa 2: ensaio com cliente simulado.
+// À esquerda, o chat. À direita, só o que ajuda agora: sugestões de pergunta e o botão de avaliar.
+// Depois da avaliação, o painel da direita vira o resultado.
 
 import { useEffect, useRef, useState } from "react";
 import { postar } from "@/lib/api";
@@ -66,124 +66,119 @@ export default function Ensaiar({ lead, atualizar, irPara }: Props) {
     }
   }
 
-  /** Leva a conversa do ensaio para a aba de proposta como anotação. */
+  /** Leva o que o cliente falou no ensaio para a etapa de proposta. */
   function usarNaProposta() {
-    const resumo = mensagens
-      .filter((m) => m.autor === "cliente")
-      .map((m) => `- ${m.texto}`)
-      .join("\n");
-    atualizar({ anotacoes: `O que o cliente falou no ensaio:\n${resumo}` });
+    const falas = mensagens.filter((m) => m.autor === "cliente").map((m) => `- ${m.texto}`).join("\n");
+    atualizar({ anotacoes: `O que o cliente falou no ensaio:\n${falas}` });
     irPara();
   }
 
-  const proximas = lead.roteiro.perguntas.filter((_, i) => !(lead.perguntasFeitas ?? []).includes(i)).slice(0, 4);
+  // Sugestões: abertura no começo, depois as 3 próximas perguntas ainda não feitas.
+  const feitas = new Set(mensagens.filter((m) => m.autor === "vendedor").map((m) => m.texto));
+  const sugestoes =
+    mensagens.length === 0
+      ? [`${lead.roteiro.abertura.rapport[0] ?? ""} ${lead.roteiro.abertura.agenda}`.trim()]
+      : lead.roteiro.perguntas.map((q) => q.pergunta).filter((q) => !feitas.has(q)).slice(0, 3);
 
   return (
     <div className="ensaio">
-      <div className="chat">
+      <div className="cartao chat">
         <div className="chat-cab">
-          <div style={{ display: "flex", flexDirection: "column" }}>
-            <b style={{ fontFamily: "var(--serif)", fontWeight: 400, fontSize: 22 }}>{p.nome}</b>
-            <span className="pequeno texto-suave">{p.cargo} · {p.personalidade}</span>
+          <div>
+            <div style={{ fontWeight: 600 }}>{p.nome}</div>
+            <div className="pequeno suave">{p.cargo}</div>
           </div>
-          {mensagens.length > 0 && (
-            <button className="link-texto" onClick={() => gravar([])} disabled={esperando}>recomeçar</button>
-          )}
+          {mensagens.length > 0 && <button className="link" onClick={() => gravar([])} disabled={esperando}>Recomeçar</button>}
         </div>
 
         <div className="chat-msgs">
           {mensagens.length === 0 && (
             <div className="chat-vazio">
-              <span className="titulo-secao">Treine antes da reunião de verdade.</span>
-              <span className="pequeno">
-                {p.nome} tem problemas que só conta se você perguntar bem. Comece pela abertura do roteiro.
-              </span>
+              <span style={{ fontWeight: 600, color: "var(--texto)" }}>Treine antes da reunião</span>
+              <span className="pequeno">{p.nome} só conta os problemas se você perguntar bem.</span>
             </div>
           )}
           {mensagens.map((m, i) => (
-            <div key={i} className={`msg msg-${m.autor}`}>
-              <span className="rotulo">{m.autor === "vendedor" ? "você" : p.nome}</span>
-              <div className="msg-balao">{m.texto}</div>
-            </div>
+            <div key={i} className={`msg msg-${m.autor}`}>{m.texto}</div>
           ))}
-          {esperando && (
-            <div className="msg msg-cliente">
-              <span className="rotulo">{p.nome}</span>
-              <div className="msg-balao texto-suave">pensando…</div>
-            </div>
-          )}
+          {esperando && <div className="msg msg-cliente suave">digitando…</div>}
           <div ref={fimRef} />
         </div>
 
         {erro && <div className="erro" style={{ margin: "0 12px 12px" }}>{erro}</div>}
 
         <form className="chat-form" onSubmit={(e) => { e.preventDefault(); enviar(texto); }}>
-          <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder={`Fale com ${p.nome}…`} disabled={esperando} />
+          <input value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="Escreva sua fala…" disabled={esperando} />
           <button className="botao" type="submit" disabled={esperando || !texto.trim()}>Enviar</button>
         </form>
       </div>
 
-      <div className="lateral">
-        {!avaliacao && (
-          <>
-            <div className="cola">
-              <span className="rotulo">Cola do roteiro · clique para usar</span>
-              {mensagens.length === 0 && (
-                <button onClick={() => setTexto(`${lead.roteiro.abertura.rapport[0] ?? ""} ${lead.roteiro.abertura.agenda}`.trim())}>
-                  ↳ Abertura: {lead.roteiro.abertura.rapport[0]}
-                </button>
-              )}
-              {proximas.map((q) => (
-                <button key={q.pergunta} onClick={() => setTexto(q.pergunta)}>↳ <b>{q.tipo[0]}</b> {q.pergunta}</button>
+      <div className="pilha lado">
+        {!avaliacao ? (
+          <section className="cartao">
+            <h2 className="subtitulo">Sugestões</h2>
+            <div className="pilha" style={{ gap: 8 }}>
+              {sugestoes.map((s) => (
+                <button key={s} className="sugestao" onClick={() => setTexto(s)}>{s}</button>
               ))}
             </div>
             <button className="botao" onClick={avaliar} disabled={avaliando || mensagens.length < 4}>
               {avaliando ? "Avaliando…" : "Encerrar e avaliar"}
             </button>
-            {mensagens.length < 4 && <span className="pequeno texto-suave">Troque pelo menos duas falas para pedir a avaliação.</span>}
-          </>
-        )}
-
-        {avaliacao && (
-          <div className="avaliacao">
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 12 }}>
-              <span className="nota-grande">{avaliacao.nota}</span>
-              <span className="rotulo" style={{ paddingBottom: 8 }}>de 10</span>
-            </div>
-            <p style={{ margin: 0 }}>{avaliacao.resumo}</p>
-
-            <div className="dores-reveladas">
-              <div className="achou">
-                <span className="rotulo">Você descobriu</span>
-                {avaliacao.dores_descobertas.length ? avaliacao.dores_descobertas.map((x) => <span key={x} className="pequeno">{x}</span>) : <span className="pequeno">nenhuma dor</span>}
-              </div>
-              <div className="escondida">
-                <span className="rotulo">Ficou escondido</span>
-                {avaliacao.dores_nao_descobertas.length ? avaliacao.dores_nao_descobertas.map((x) => <span key={x} className="pequeno">{x}</span>) : <span className="pequeno">nada, mandou bem</span>}
-              </div>
-            </div>
-
-            <div className="bloco">
-              <span className="rotulo">Pontos fortes</span>
-              <ul className="lista-limpa pequeno">{avaliacao.pontos_fortes.map((x) => <li key={x} className="item-ponto">{x}</li>)}</ul>
-            </div>
-            <div className="bloco">
-              <span className="rotulo">Faltou</span>
-              <ul className="lista-limpa pequeno">{avaliacao.faltou.map((x) => <li key={x} className="item-ponto">{x}</li>)}</ul>
-            </div>
-            <div className="bloco">
-              <span className="rotulo">Na próxima, pergunte</span>
-              {avaliacao.proxima_vez.map((x) => <p key={x} className="fala" style={{ margin: 0, fontSize: 18 }}>{x}</p>)}
-            </div>
-
-            <div className="acoes">
-              <button className="botao botao-claro botao-mini" onClick={() => gravar(mensagens)}>Continuar conversa</button>
-              <button className="botao botao-claro botao-mini" onClick={() => gravar([])}>Ensaiar de novo</button>
-              <button className="botao botao-mini" onClick={usarNaProposta}>Levar para a proposta →</button>
-            </div>
-          </div>
+            {mensagens.length < 4 && <span className="pequeno suave">Troque pelo menos duas falas para avaliar.</span>}
+          </section>
+        ) : (
+          <Resultado avaliacao={avaliacao} onContinuar={() => gravar(mensagens)} onRecomecar={() => gravar([])} onProposta={usarNaProposta} />
         )}
       </div>
     </div>
+  );
+}
+
+/* ---------------- Resultado da avaliação ---------------- */
+
+type ResultadoProps = { avaliacao: Avaliacao; onContinuar: () => void; onRecomecar: () => void; onProposta: () => void };
+
+function Resultado({ avaliacao: a, onContinuar, onRecomecar, onProposta }: ResultadoProps) {
+  return (
+    <section className="cartao">
+      <div className="linha" style={{ alignItems: "baseline" }}>
+        <span className="nota">{a.nota}</span>
+        <span className="suave">de 10</span>
+      </div>
+      <p className="pequeno">{a.resumo}</p>
+
+      <div className="duas">
+        <div className="achou">
+          <b>Você descobriu</b>
+          {a.dores_descobertas.length ? a.dores_descobertas.map((x) => <span key={x}>{x}</span>) : <span>nenhuma dor</span>}
+        </div>
+        <div className="escondida">
+          <b>Ficou escondido</b>
+          {a.dores_nao_descobertas.length ? a.dores_nao_descobertas.map((x) => <span key={x}>{x}</span>) : <span>nada</span>}
+        </div>
+      </div>
+
+      <div>
+        <details open>
+          <summary>Na próxima, pergunte</summary>
+          <ul className="lista pequeno">{a.proxima_vez.map((x) => <li key={x}>{x}</li>)}</ul>
+        </details>
+        <details>
+          <summary>O que faltou</summary>
+          <ul className="lista pequeno">{a.faltou.map((x) => <li key={x}>{x}</li>)}</ul>
+        </details>
+        <details>
+          <summary>Pontos fortes</summary>
+          <ul className="lista pequeno">{a.pontos_fortes.map((x) => <li key={x}>{x}</li>)}</ul>
+        </details>
+      </div>
+
+      <button className="botao" onClick={onProposta}>Levar para a proposta →</button>
+      <div className="linha">
+        <button className="link" onClick={onContinuar}>Continuar conversa</button>
+        <button className="link" onClick={onRecomecar}>Ensaiar de novo</button>
+      </div>
+    </section>
   );
 }
